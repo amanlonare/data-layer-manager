@@ -1,6 +1,6 @@
 # Architecture Overview
 
-`data-layer-manager` is designed as a **Library-First Modular Monolith**. The core business logic and infrastructure are defined in a reusable Python package (`src/data_layer_manager/`), which is then imported and utilized by various application entrypoints (`apps/`).
+`data-layer-manager` is designed as a **Library-First Modular Monolith**. The core business logic and infrastructure are defined in a reusable Python package (`data_layer_manager/`), which is then imported and utilized by various application entrypoints (`apps/`).
 
 ## Core Architecture Design Principles
 

@@ -1,6 +1,6 @@
 [project]
 name = "data-layer-manager"
-version = "0.1.0"
+version = "0.0.1"
 description = "Reusable Data Layer for AI Systems"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -40,10 +40,13 @@ dev = [
     "ruff>=0.0.280",
     "pre-commit>=3.3.0",
     "faker>=19.0.0",
+    "bump-my-version>=0.10.0",
 ]
 
 [tool.ruff]
 line-length = 88
+
+[tool.ruff.lint]
 select = ["E", "F", "I", "U"]
 ignore = ["E501"]
 
