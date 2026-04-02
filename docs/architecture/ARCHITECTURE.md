@@ -7,31 +7,34 @@ The most critical rule is that **dependencies always point inward**. The Domain 
 
 ```mermaid
 graph TD
-    subgraph "Presentation Layer"
+    %% Layers and Components
+    subgraph "Presentation (Access)"
         CLI[CLI Tools]
-        API[FastAPI / REST]
+        API[FastAPI REST Support]
     end
 
-    subgraph "Application Layer"
-        UC[Use Cases / Orchestration]
+    subgraph "Application (Use Cases)"
+        UC[Ingest & Search Orchestration]
     end
 
-    subgraph "Infrastructure Layer"
-        DB[SQLAlchemy / Postgres]
-        VS[Vector Store / Milvus]
+    subgraph "Infrastructure (Technical)"
+        DB[(Postgres + SQLAlchemy)]
+        VS[(pgvector Search Engine)]
+        REPO[Concrete Repositories]
     end
 
-    subgraph "Domain Layer (Core)"
-        ENT[Entities / Pydantic]
-        INT[Interfaces / ABCs]
+    subgraph "Domain (The Core)"
+        ENT[Entities: Document & Chunk]
+        INT[Interfaces: Repository / Vector]
     end
 
-    CLI --> UC
-    API --> UC
-    UC --> ENT
-    UC --> INT
-    DB -.-> INT
-    VS -.-> INT
+    %% Dependency Flow (Points Inward)
+    CLI & API --> UC
+    UC --> ENT & INT
+
+    %% Implementation Implementation
+    REPO -.-> INT
+    REPO --- DB & VS
 ```
 
 ## 📂 Directory to Layer Mapping
