@@ -59,4 +59,3 @@ docker-compose.local.yml
 .DS_Store
 .planning/
 .agent/
-docs/
