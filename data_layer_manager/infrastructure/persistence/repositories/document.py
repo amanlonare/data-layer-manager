@@ -11,7 +11,7 @@ from data_layer_manager.infrastructure.persistence.models import (
 )
 
 
-class SQLAlchemyDocumentRepository:
+class DocumentRepository:
     """
     SQLAlchemy implementation of the document persistence layer.
     Handles mapping between Domain Entities and Persistence Models.
