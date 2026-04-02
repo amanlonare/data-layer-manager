@@ -16,7 +16,7 @@
 
 Following the **Modular Monolith** and **Library-First** principles:
 
-- **Core Package**: `src/data_layer_manager/` (Domain logic, Infrastructure, Application logic).
+- **Core Package**: `data_layer_manager/` (Domain logic, Infrastructure, Application logic).
 - **App Entrypoints**:
   - `apps/api/`: Thin FastAPI layer for transport.
   - `apps/worker/`: Celery/Queue-based background processing for long-running ingestion/indexing jobs.
@@ -52,12 +52,11 @@ Refer to the **[Quality Policy](./docs/operations/quality_policy.md)** for detai
 ```text
 data-layer-manager/
 ├── apps/               # Entrypoints (API, Worker, MCP)
-├── src/                # Core library source
-│   └── data_layer_manager/
-│       ├── core/       # Global config, logging, telemetry
-│       ├── domain/     # Entities, Interfaces, Services (The "What")
-│       ├── application/# Use cases, Orchestrators (The "How")
-│       └── infrastructure/ # DB, VectorStores, Celery, Connectors (The "Tools")
+├── data_layer_manager/   # Core library source
+│   ├── core/           # Global config, logging, telemetry
+│   ├── domain/         # Entities, Interfaces, Services (The "What")
+│   ├── application/    # Use cases, Orchestrators (The "How")
+│   └── infrastructure/ # DB, VectorStores, Celery, Connectors (The "Tools")
 ├── docs/               # Architecture, ADRs, Operational guides
 ├── tests/              # Unit, Integration, E2E tests
 └── scripts/            # Dev, Ops, and Evaluation utilities
