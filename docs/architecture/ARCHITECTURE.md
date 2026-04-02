@@ -6,35 +6,37 @@ This project follows **Clean Architecture** principles, ensuring a clear separat
 The most critical rule is that **dependencies always point inward**. The Domain layer never knows about the database or external APIs.
 
 ```mermaid
-graph TD
-    %% Layers and Components
-    subgraph "Presentation (Access)"
+flowchart TD
+    subgraph Presentation ["Presentation (Access)"]
         CLI[CLI Tools]
         API[FastAPI REST Support]
     end
 
-    subgraph "Application (Use Cases)"
+    subgraph Application ["Application (Use Cases)"]
         UC[Ingest & Search Orchestration]
     end
 
-    subgraph "Infrastructure (Technical)"
+    subgraph Infrastructure ["Infrastructure (Technical)"]
         DB[(Postgres + SQLAlchemy)]
         VS[(pgvector Search Engine)]
         REPO[Concrete Repositories]
     end
 
-    subgraph "Domain (The Core)"
+    subgraph Domain ["Domain (The Core)"]
         ENT[Entities: Document & Chunk]
         INT[Interfaces: Repository / Vector]
     end
 
     %% Dependency Flow (Points Inward)
-    CLI & API --> UC
-    UC --> ENT & INT
+    CLI --> UC
+    API --> UC
+    UC --> ENT
+    UC --> INT
 
     %% Implementation Implementation
     REPO -.-> INT
-    REPO --- DB & VS
+    REPO --- DB
+    REPO --- VS
 ```
 
 ## 📂 Directory to Layer Mapping
