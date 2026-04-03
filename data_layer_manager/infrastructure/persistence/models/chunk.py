@@ -29,8 +29,8 @@ class ChunkDBModel(Base):
 
     content: Mapped[str] = mapped_column(Text)
 
-    # Embedding vector (Defaulting to OpenAI 1536)
-    embedding: Mapped[list[float] | None] = mapped_column(Vector(1536), nullable=True)
+    # Embedding vector (Defaulting to all-MiniLM-L6-v2: 384)
+    embedding: Mapped[list[float] | None] = mapped_column(Vector(384), nullable=True)
 
     # Explicit core metadata (Mirrored from Doc/Extracted)
     source_type: Mapped[str] = mapped_column(String(50))

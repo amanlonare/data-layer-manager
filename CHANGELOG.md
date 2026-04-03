@@ -7,8 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.0.2] - 2026-04-03
 
+### Added
+- **Vector Intelligence**: Implemented `BaseEmbeddingEngine` and `HFEmbeddingEngine` using local `SentenceTransformers` (`all-MiniLM-L6-v2`) for cost-effective, high-performance semantic inference.
+- **PGVector Persistence**: Integrated `pgvector` with SQLAlchemy; added 384-dimensional vector column to `ChunkDBModel` and implemented the `PGVectorStore` repository for durable vector management.
+- **Semantic Retrieval**: Developed `VectorRetrievalService` to orchestrate query embedding and similarity-based retrieval, providing a foundation for natural language search.
+- **Automated Schema Evolution**: Initialized `vector` extension and managed-column resizing via a robust Alembic migration cycle.
+- **Integration Testing**: Established a dedicated e2e validation suite in `tests/integration/test_vector_retrieval.py` to ensure long-term pipeline stability.
+
 ### Changed
-- **Ingestion Architecture**: Refactored the flat ingestion structure into a modular strategy-based layout with a dedicated `chunkers` directory.
+- **Ingestion Architecture**: Refactored the flat ingestion structure into a modular strategy-based layout with pluggable `chunkers` and `parsers`.
 - **Document Parsing**: Replaced manual text extraction with a pluggable `ParserRegistry` supporting HTML (via `trafilatura`) and Markdown (via `markdown-it-py`).
 - **Type Safety**: Hardened the codebase against runtime failures by resolving 15 Mypy type-check errors in the core domain and infrastructure.
 - **Persistence Simulation**: Updated the `InMemoryDocumentRepository` and associated test fixtures to correctly handle UUID serialization and strictly typed interfaces.

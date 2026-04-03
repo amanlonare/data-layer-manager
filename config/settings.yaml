@@ -1,0 +1,21 @@
+# Base Configuration - settings.yaml
+
+app:
+  name: "Data Layer Manager"
+  version: "0.0.2"
+
+embeddings:
+  provider: "huggingface"
+  model_name: "all-MiniLM-L6-v2"
+  dimension: 384
+  batch_size: 32
+
+chunking:
+  default_size: 500
+  default_overlap: 50
+
+vector_store:
+  provider: "pgvector"
+
+database:
+  db_type: "postgresql"

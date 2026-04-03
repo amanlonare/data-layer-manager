@@ -5,6 +5,9 @@ from data_layer_manager.application.ingestion.parser_registry import ParserRegis
 from data_layer_manager.domain.entities.chunk import Chunk
 from data_layer_manager.domain.entities.document import Document
 from data_layer_manager.domain.interfaces.chunker import BaseChunker
+from data_layer_manager.domain.interfaces.embeddings import BaseEmbeddingEngine
+from data_layer_manager.domain.interfaces.vector_store import BaseVectorStore
+from data_layer_manager.infrastructure.config import ChunkingSettings, get_settings
 
 
 class IngestionService:
@@ -17,10 +20,16 @@ class IngestionService:
         parser_registry: ParserRegistry,
         chunker: BaseChunker,
         document_repository: Any,
+        embedding_engine: BaseEmbeddingEngine,
+        vector_store: BaseVectorStore,
+        settings: ChunkingSettings | None = None,
     ):
         self.parser_registry = parser_registry
         self.chunker = chunker
         self.document_repository = document_repository
+        self.embedding_engine = embedding_engine
+        self.vector_store = vector_store
+        self.settings = settings or get_settings().chunking
 
     def ingest_file(self, file_path: str, source_metadata: dict[str, Any]) -> Document:
         """
@@ -82,8 +91,14 @@ class IngestionService:
         document.chunks = chunks
         document.status = "COMPLETED"
 
-        # 6. Persist the Document and its list[Chunk] via the repository.
+        # 6. Generate Embeddings for all chunks
+        chunk_texts = [c.content for c in chunks]
+        embeddings = self.embedding_engine.embed_batch(chunk_texts)
+        for i, chunk in enumerate(chunks):
+            chunk.embedding = embeddings[i]
+
+        # 7. Persist the Document (Metadata) and Chunks (VectorStore)
         self.document_repository.save(document)
-        # Note: In a real implementation this would likely save via a structured transaction
+        self.vector_store.add_chunks(chunks)
 
         return document

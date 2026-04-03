@@ -4,10 +4,12 @@ from data_layer_manager.application.ingestion.chunkers.fixed_chunker import (
     FixedSizeChunker,
 )
 from data_layer_manager.domain.schemas.parsed_document import ParsedDocument
+from data_layer_manager.infrastructure.config import ChunkingSettings
 
 
 def test_fixed_chunker_basic() -> None:
-    chunker = FixedSizeChunker(chunk_size=100, overlap=10)
+    settings = ChunkingSettings(default_size=100, default_overlap=10)
+    chunker = FixedSizeChunker(settings=settings)
     text = "A" * 150
     doc = ParsedDocument(
         title="Test", raw_content=text, source_locator="test.txt", metadata={}
@@ -26,7 +28,8 @@ def test_fixed_chunker_basic() -> None:
 
 
 def test_fixed_chunker_small_text() -> None:
-    chunker = FixedSizeChunker(chunk_size=100, overlap=20)
+    settings = ChunkingSettings(default_size=100, default_overlap=20)
+    chunker = FixedSizeChunker(settings=settings)
     text = "Short text"
     doc = ParsedDocument(title="Test", raw_content=text, source_locator="test.txt")
 
@@ -36,7 +39,8 @@ def test_fixed_chunker_small_text() -> None:
 
 
 def test_fixed_chunker_empty_text() -> None:
-    chunker = FixedSizeChunker(chunk_size=100, overlap=20)
+    settings = ChunkingSettings(default_size=100, default_overlap=20)
+    chunker = FixedSizeChunker(settings=settings)
     doc = ParsedDocument(title="Empty", raw_content="", source_locator="test.txt")
 
     chunks = chunker.chunk(doc)
@@ -46,4 +50,5 @@ def test_fixed_chunker_empty_text() -> None:
 def test_fixed_chunker_large_overlap() -> None:
     # Error case: overlap >= chunk_size
     with pytest.raises(ValueError, match="overlap must be smaller than chunk_size"):
-        FixedSizeChunker(chunk_size=50, overlap=50)
+        settings = ChunkingSettings(default_size=50, default_overlap=50)
+        FixedSizeChunker(settings=settings)
