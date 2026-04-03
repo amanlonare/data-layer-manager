@@ -24,7 +24,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Added `CONTRIBUTING.md` with SemVer workflow and quality standards.
     - Initial `CHANGELOG.md` creation.
     - Updated `Architecture Overview` for the new internal organization.
-- **Tooling**:
-    - Conventional Commits enforced for automated version bumps.
+- **Project Foundation**
+    - Initialized CLEAN architecture with domain, application, and infrastructure layers.
+    - Added comprehensive GSD planning infrastructure (PROJECT, REQUIREMENTS, ROADMAP).
     - `ruff` and `mypy` configurations updated for strict quality control.
     - `Alembic` persistence foundation initialized.
+- **Improved Traceability**
+    - Defined mandatory metadata schema for chunk-level traceability (doc_id, chunk_index, etc.).
+- **Revised Roadmap**
+    - Optimized milestone order: Embeddings first, Neo4j deferred to Phase 6.
