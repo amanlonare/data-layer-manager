@@ -26,7 +26,7 @@ format:
 	uv run ruff format .
 
 test:
-	uv run pytest tests/ --asyncio-mode=auto --cov=src
+	uv run pytest tests/ --asyncio-mode=auto --cov=data_layer_manager
 
 dev:
 	uv run uvicorn apps.api.main:app --reload --host 0.0.0.0 --port 8000
