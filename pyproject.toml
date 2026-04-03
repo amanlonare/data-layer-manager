@@ -29,6 +29,10 @@ dependencies = [
     "python-jose[cryptography]>=3.3.0",
     "passlib[bcrypt]>=1.7.0",
     "neo4j>=5.10.0",
+    "bs4>=0.0.2",
+    "trafilatura>=2.0.0",
+    "pytest>=9.0.2",
+    "pre-commit>=4.5.1",
 ]
 
 [project.optional-dependencies]
