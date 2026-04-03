@@ -17,9 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - **Ingestion Architecture**: Refactored the flat ingestion structure into a modular strategy-based layout with pluggable `chunkers` and `parsers`.
 - **Document Parsing**: Replaced manual text extraction with a pluggable `ParserRegistry` supporting HTML (via `trafilatura`) and Markdown (via `markdown-it-py`).
-- **Type Safety**: Hardened the codebase against runtime failures by resolving 15 Mypy type-check errors in the core domain and infrastructure.
+- **Type Safety**: Achieved 100% strict Mypy compliance across 64 source files, including mandatory type-hinting of all test suites and library-specific stubs for `PyYAML`.
+- **Quality Tooling**: Resolved 38 `ruff` linting violations, standardized logging to lazy formatting, and refactored `YamlConfigSettingsSource` for full alignment with `pydantic-settings` v2.
 - **Persistence Simulation**: Updated the `InMemoryDocumentRepository` and associated test fixtures to correctly handle UUID serialization and strictly typed interfaces.
-- **Quality Tooling**: Standardized logging to lazy formatting and resolved multiple `ruff` linting regressions identified during the refactor.
 
 ## [0.0.1] - 2026-04-02
 
