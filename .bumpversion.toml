@@ -24,3 +24,9 @@ replace = 'version = "{new_version}"'
 filename = "data_layer_manager/__init__.py"
 search = '__version__ = "{current_version}"'
 replace = '__version__ = "{new_version}"'
+
+[[tool.bumpversion.files]]
+filename = "uv.lock"
+search = 'name = "data-layer-manager"\nversion = "{current_version}"'
+replace = 'name = "data-layer-manager"\nversion = "{new_version}"'
+regex = true
