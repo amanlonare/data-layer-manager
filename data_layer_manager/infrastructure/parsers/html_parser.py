@@ -2,6 +2,7 @@ from pathlib import Path
 from typing import Any
 
 import trafilatura
+from bs4 import BeautifulSoup
 
 from data_layer_manager.domain.interfaces.parser import BaseParser
 from data_layer_manager.domain.schemas.parsed_document import ParsedDocument
@@ -35,6 +36,16 @@ class HTMLParser(BaseParser):
         else:
             clean_text = ""
             title = None
+
+        if not title:
+            # Fallback for minor snippets or missing title: basic BS4
+            soup = BeautifulSoup(content, "html.parser")
+            title_tag = soup.find("h1") or soup.find("title")
+            if title_tag:
+                title = title_tag.get_text().strip()
+
+            if not clean_text:
+                clean_text = soup.get_text(separator="\n")
 
         return ParsedDocument(
             raw_content=clean_text,

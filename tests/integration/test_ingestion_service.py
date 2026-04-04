@@ -8,6 +8,7 @@ from data_layer_manager.application.ingestion.chunkers.fixed_chunker import (
 )
 from data_layer_manager.application.ingestion.parser_registry import ParserRegistry
 from data_layer_manager.application.ingestion.service import IngestionService
+from data_layer_manager.infrastructure.parsers.html_parser import HTMLParser
 from data_layer_manager.infrastructure.parsers.markdown_parser import MarkdownParser
 from data_layer_manager.infrastructure.parsers.text_parser import TextParser
 
@@ -27,6 +28,7 @@ def parser_registry_fixture() -> ParserRegistry:
     registry = ParserRegistry()
     registry.register(".md", MarkdownParser())
     registry.register(".txt", TextParser())
+    registry.register(".html", HTMLParser())
     return registry
 
 
@@ -92,3 +94,30 @@ def test_markdown_ingestion_traceability(
 
     # The first chunk should cover roughly 100 characters
     assert saved_doc.chunks[0].metadata["end_offset"] <= 100
+
+
+def test_html_ingestion_trafilatura(
+    ingestion_service_fixture: IngestionService,
+    document_repository_fixture: InMemoryDocumentRepository,
+    tmp_path: Any,
+) -> None:
+    # 1. Ingest a sample .html file
+    sample_html = tmp_path / "test_article.html"
+    sample_html.write_text(
+        "<html><head><title>Main Title</title></head><body><h1>Main Title</h1><p>Some introductory content that is long enough to be considered an article by trafilatura.</p></body></html>"
+    )
+
+    # Run ingestion
+    doc = ingestion_service_fixture.ingest_file(
+        str(sample_html), source_metadata={"source_category": "web_docs"}
+    )
+
+    # 2. Asserts
+    assert doc.status == "COMPLETED"
+    assert doc.title == "Main Title"
+
+    saved_doc = document_repository_fixture.documents[str(doc.id)]
+    assert len(saved_doc.chunks) > 0
+    assert saved_doc.chunks[0].metadata["source_locator"] == str(sample_html.absolute())
+    assert saved_doc.chunks[0].metadata["parser_name"] == "HTMLParser-v1"
+    assert saved_doc.chunks[0].source_category == "web_docs"
