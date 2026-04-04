@@ -3,8 +3,8 @@ import pytest
 from data_layer_manager.application.ingestion.chunkers.fixed_chunker import (
     FixedSizeChunker,
 )
+from data_layer_manager.core.config import ChunkingSettings
 from data_layer_manager.domain.schemas.parsed_document import ParsedDocument
-from data_layer_manager.infrastructure.config import ChunkingSettings
 
 
 def test_fixed_chunker_basic() -> None:

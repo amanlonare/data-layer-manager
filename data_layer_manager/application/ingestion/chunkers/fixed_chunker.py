@@ -1,7 +1,7 @@
+from data_layer_manager.core.config import ChunkingSettings, get_settings
 from data_layer_manager.domain.interfaces.chunker import BaseChunker
 from data_layer_manager.domain.schemas.parsed_chunk import ParsedChunk
 from data_layer_manager.domain.schemas.parsed_document import ParsedDocument
-from data_layer_manager.infrastructure.config import ChunkingSettings, get_settings
 
 
 class FixedSizeChunker(BaseChunker):

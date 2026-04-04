@@ -2,12 +2,12 @@ from pathlib import Path
 from typing import Any
 
 from data_layer_manager.application.ingestion.parser_registry import ParserRegistry
+from data_layer_manager.core.config import ChunkingSettings, get_settings
 from data_layer_manager.domain.entities.chunk import Chunk
 from data_layer_manager.domain.entities.document import Document
 from data_layer_manager.domain.interfaces.chunker import BaseChunker
 from data_layer_manager.domain.interfaces.embeddings import BaseEmbeddingEngine
 from data_layer_manager.domain.interfaces.vector_store import BaseVectorStore
-from data_layer_manager.infrastructure.config import ChunkingSettings, get_settings
 
 
 class IngestionService:
@@ -76,6 +76,10 @@ class IngestionService:
                     "end_offset": p_chunk.end_offset,
                 }
             )
+
+            # Flatten additional source metadata into the chunk for easier retrieval filtering
+            source_meta = parsed_doc.metadata.get("source_metadata", {})
+            chunk_metadata.update(source_meta)
 
             chunk = Chunk(
                 document_id=document.id,

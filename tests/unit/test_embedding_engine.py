@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from data_layer_manager.infrastructure.config import EmbeddingSettings
+from data_layer_manager.core.config import EmbeddingSettings
 from data_layer_manager.infrastructure.embeddings.hf_engine import HFEmbeddingEngine
 
 

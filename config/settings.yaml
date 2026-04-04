@@ -19,3 +19,7 @@ vector_store:
 
 database:
   db_type: "postgresql"
+
+reranking:
+  model_name: "cross-encoder/ms-marco-MiniLM-L-6-v2"
+  limit: 10

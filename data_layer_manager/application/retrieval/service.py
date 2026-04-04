@@ -1,35 +1,67 @@
-from data_layer_manager.domain.entities.chunk import Chunk
-from data_layer_manager.domain.interfaces.embeddings import BaseEmbeddingEngine
-from data_layer_manager.domain.interfaces.vector_store import BaseVectorStore
+import asyncio
+
+from data_layer_manager.domain.interfaces.retrieval import (
+    BaseFusion,
+    BaseReranker,
+    BaseRetriever,
+)
+from data_layer_manager.domain.schemas.retrieval_filter import RetrievalFilter
+from data_layer_manager.domain.schemas.scored_chunk import ScoredChunk
 
 
-class VectorRetrievalService:
+class HybridRetrievalService:
     """
-    Application service that provides semantic retrieval capabilities.
-    Fulfills the minimal semantic retrieval path for Phase 2 validation.
+    Orchestrator for the modular retrieval pipeline.
+    Combines disparate search strategies (semantic, lexical) into a unified result set.
     """
 
     def __init__(
         self,
-        embedding_engine: BaseEmbeddingEngine,
-        vector_store: BaseVectorStore,
+        retrievers: list[BaseRetriever],
+        fusion_strategy: BaseFusion,
+        reranker: BaseReranker | None = None,
     ):
-        self._embedding_engine = embedding_engine
-        self._vector_store = vector_store
+        self._retrievers = retrievers
+        self._fusion_strategy = fusion_strategy
+        self._reranker = reranker
 
-    def search_semantic(self, query: str, limit: int = 5) -> list[Chunk]:
+    async def search(
+        self,
+        query: str,
+        filter_: RetrievalFilter | None = None,
+        limit: int = 10,
+        rerank_threshold: int = 20,
+    ) -> list[ScoredChunk]:
         """
-        Embeds the query and performs a vector-based search.
-
-        Args:
-            query: The natural language search query.
-            limit: Maximum number of results to return.
-
-        Returns:
-            A list of Chunk entities that are semantically relevant.
+        Executes the hybrid search pipeline:
+        1. Parallel Retrieval (Async)
+        2. Rank Fusion (RRF)
+        3. Optional Reranking (Cross-Encoder)
         """
-        # 1. Generate query embedding
-        query_vector = self._embedding_engine.embed(query)
+        if not filter_:
+            filter_ = RetrievalFilter()
 
-        # 2. Perform search in vector store
-        return self._vector_store.search(query_vector=query_vector, limit=limit)
+        # 1. Component Level Retrieval (Async Parallelism)
+        # We retrieve more than the final limit to allow for fusion and reranking depth
+        retrieval_tasks = [
+            retriever.retrieve(query, filter_, limit=limit * 3)
+            for retriever in self._retrievers
+        ]
+
+        # Parallel execution to minimize database round-trip latency
+        results_sets = await asyncio.gather(*retrieval_tasks)
+
+        # 2. Rank Fusion (Reciprocal Rank Fusion)
+        # Normalizes different scoring mechanisms into a single rank
+        fused_results = self._fusion_strategy.fuse(results_sets, limit=rerank_threshold)
+
+        # 3. Optional Second-Stage Reranking
+        # Applied only to a bounded set of top candidates for performance
+        if self._reranker and fused_results:
+            final_results = await self._reranker.rerank(
+                query, fused_results, limit=limit
+            )
+            return final_results
+
+        # Return fused results capped at the requested limit if no reranker is active
+        return fused_results[:limit]

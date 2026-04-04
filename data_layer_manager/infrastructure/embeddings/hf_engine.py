@@ -5,8 +5,8 @@ from typing import cast
 
 from sentence_transformers import SentenceTransformer
 
+from data_layer_manager.core.config import EmbeddingSettings, get_settings
 from data_layer_manager.domain.interfaces.embeddings import BaseEmbeddingEngine
-from data_layer_manager.infrastructure.config import EmbeddingSettings, get_settings
 
 
 class HFEmbeddingEngine(BaseEmbeddingEngine):

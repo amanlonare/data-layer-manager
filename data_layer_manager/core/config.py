@@ -33,6 +33,11 @@ class VectorStoreSettings(BaseModel):
     provider: str = "pgvector"
 
 
+class RerankingSettings(BaseModel):
+    model_name: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
+    limit: int = 10
+
+
 class DatabaseSettings(BaseModel):
     db_type: str = "postgresql"
     # Secrets should come from .env
@@ -108,6 +113,7 @@ class Settings(BaseSettings):
     chunking: ChunkingSettings = ChunkingSettings()
     vector_store: VectorStoreSettings = VectorStoreSettings()
     database: DatabaseSettings = DatabaseSettings()
+    reranking: RerankingSettings = RerankingSettings()
 
     model_config = SettingsConfigDict(
         env_file=".env",

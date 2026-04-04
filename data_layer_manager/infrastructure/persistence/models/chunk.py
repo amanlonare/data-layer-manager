@@ -5,8 +5,8 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
 from pgvector.sqlalchemy import Vector
-from sqlalchemy import DateTime, ForeignKey, String, Text
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy import DateTime, ForeignKey, Index, String, Text
+from sqlalchemy.dialects.postgresql import JSONB, TSVECTOR
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from data_layer_manager.infrastructure.persistence.models.base import Base
@@ -21,6 +21,9 @@ class ChunkDBModel(Base):
     """
 
     __tablename__ = "chunks"
+    __table_args__ = (
+        Index("ix_chunks_search_vector", "search_vector", postgresql_using="gin"),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     document_id: Mapped[uuid.UUID] = mapped_column(
@@ -31,6 +34,9 @@ class ChunkDBModel(Base):
 
     # Embedding vector (Defaulting to all-MiniLM-L6-v2: 384)
     embedding: Mapped[list[float] | None] = mapped_column(Vector(384), nullable=True)
+
+    # Keyword Search Vector (FTS)
+    search_vector: Mapped[Any | None] = mapped_column(TSVECTOR, nullable=True)
 
     # Explicit core metadata (Mirrored from Doc/Extracted)
     source_type: Mapped[str] = mapped_column(String(50))

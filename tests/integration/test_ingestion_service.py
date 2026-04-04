@@ -8,7 +8,7 @@ from data_layer_manager.application.ingestion.chunkers.fixed_chunker import (
 )
 from data_layer_manager.application.ingestion.parser_registry import ParserRegistry
 from data_layer_manager.application.ingestion.service import IngestionService
-from data_layer_manager.infrastructure.config import ChunkingSettings
+from data_layer_manager.core.config import ChunkingSettings
 from data_layer_manager.infrastructure.parsers.html_parser import HTMLParser
 from data_layer_manager.infrastructure.parsers.markdown_parser import MarkdownParser
 from data_layer_manager.infrastructure.parsers.text_parser import TextParser
