@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.3] - 2026-04-04
+
+### Added
+- **Hybrid Retrieval Orchestration**: Implemented `HybridRetrievalService` which fuses `PGVector` (semantic) and `PostgresFTS` (lexical) search paths using the Reciprocal Rank Fusion (RRF) algorithm.
+- **Config-Driven Reranking**: Integrated a second-stage `CrossEncoderReranker` (`ms-marco-MiniLM-L-6-v2`) with a user-facing YAML and environment variable interface in `settings.yaml`.
+- **Full-Text Search**: Added `PGFTSRetriever` utilizing Postgres `tsvector` and `GIN` indexing for robust keyword-based discovery.
+- **RRF Fusion**: Developed a vectorized RRF implementation ($k=60$) to merge disparate rankings into a unified, high-relevance candidate list.
+
+### Changed
+- **Architectural Refactor**: Relocated the central configuration from `infrastructure/config.py` to `core/config.py` to reflect its role as a cross-cutting project concern.
+- **Schema Modularization**: Decoupled `RetrievalFilter` and `ScoredChunk` from interface definitions into dedicated files in `domain/schemas/` to prevent circular dependencies.
+- **Global Import Synchronization**: Updated 15+ files and the entire test suite to align with the new package structure and schema locations.
+- **Persistence Evolution**: Enhanced the `ChunkDBModel` with automated `search_vector` management.
+
+
 ## [0.0.2] - 2026-04-03
 
 ### Added
