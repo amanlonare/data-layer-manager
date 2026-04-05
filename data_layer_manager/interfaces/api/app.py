@@ -58,7 +58,7 @@ from data_layer_manager.interfaces.api.schemas import (
 
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="Data Layer Manager API", version="0.0.6")
+app = FastAPI(title="Data Layer Manager API", version="0.0.5")
 
 # Initialize global state dependencies
 settings = get_settings()
@@ -217,7 +217,7 @@ tasks_status: dict[str, dict[str, Any]] = {}
 @app.get("/health", tags=["ops"])
 async def health_check() -> dict[str, str]:
     """Health check endpoint for deployment and service verification."""
-    return {"status": "ok", "version": "0.0.4"}
+    return {"status": "ok", "version": "0.0.5"}
 
 
 # ---------------------------------------------------------------------------
