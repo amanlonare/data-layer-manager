@@ -1,0 +1,9 @@
+# Development Configuration - settings.dev.yaml
+
+# Overrides for dev
+embeddings:
+  batch_size: 8 # Faster inference for dev tasks
+
+chunking:
+  default_size: 100 # Smaller chunks for testing traceability
+  default_overlap: 10

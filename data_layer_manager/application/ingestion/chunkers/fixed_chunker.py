@@ -1,3 +1,4 @@
+from data_layer_manager.core.config import ChunkingSettings, get_settings
 from data_layer_manager.domain.interfaces.chunker import BaseChunker
 from data_layer_manager.domain.schemas.parsed_chunk import ParsedChunk
 from data_layer_manager.domain.schemas.parsed_document import ParsedDocument
@@ -8,16 +9,19 @@ class FixedSizeChunker(BaseChunker):
     Splits text into chunks of a fixed character size with a specified overlap.
     """
 
-    def __init__(self, chunk_size: int = 1000, overlap: int = 150):
-        if chunk_size <= 0:
-            raise ValueError("chunk_size must be positive")
-        if overlap < 0:
-            raise ValueError("overlap must be non-negative")
-        if overlap >= chunk_size:
-            raise ValueError("overlap must be smaller than chunk_size")
+    def __init__(self, settings: ChunkingSettings | None = None):
+        if settings is None:
+            settings = get_settings().chunking
 
-        self.chunk_size = chunk_size
-        self.overlap = overlap
+        self.chunk_size = settings.default_size
+        self.overlap = settings.default_overlap
+
+        if self.chunk_size <= 0:
+            raise ValueError("chunk_size must be positive")
+        if self.overlap < 0:
+            raise ValueError("overlap must be non-negative")
+        if self.overlap >= self.chunk_size:
+            raise ValueError("overlap must be smaller than chunk_size")
 
     def chunk(self, parsed_doc: ParsedDocument) -> list[ParsedChunk]:
         """

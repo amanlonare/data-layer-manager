@@ -8,6 +8,7 @@ from data_layer_manager.application.ingestion.chunkers.fixed_chunker import (
 )
 from data_layer_manager.application.ingestion.parser_registry import ParserRegistry
 from data_layer_manager.application.ingestion.service import IngestionService
+from data_layer_manager.core.config import ChunkingSettings
 from data_layer_manager.infrastructure.parsers.html_parser import HTMLParser
 from data_layer_manager.infrastructure.parsers.markdown_parser import MarkdownParser
 from data_layer_manager.infrastructure.parsers.text_parser import TextParser
@@ -34,7 +35,9 @@ def parser_registry_fixture() -> ParserRegistry:
 
 @pytest.fixture
 def chunker_fixture() -> FixedSizeChunker:
-    return FixedSizeChunker(chunk_size=100, overlap=20)
+    # Pass explicit settings for testing
+    settings = ChunkingSettings(default_size=100, default_overlap=20)
+    return FixedSizeChunker(settings=settings)
 
 
 @pytest.fixture
@@ -43,13 +46,37 @@ def document_repository_fixture() -> InMemoryDocumentRepository:
 
 
 @pytest.fixture
+def mock_embedding_engine() -> Any:
+    from unittest.mock import MagicMock
+
+    engine = MagicMock()
+    engine.dimension = 384
+    engine.embed.return_value = [0.1] * 384
+    engine.embed_batch.side_effect = lambda texts: [[0.1] * 384 for _ in texts]
+    return engine
+
+
+@pytest.fixture
+def mock_vector_store() -> Any:
+    from unittest.mock import MagicMock
+
+    return MagicMock()
+
+
+@pytest.fixture
 def ingestion_service_fixture(
     parser_registry_fixture: ParserRegistry,
     chunker_fixture: FixedSizeChunker,
     document_repository_fixture: InMemoryDocumentRepository,
+    mock_embedding_engine: Any,
+    mock_vector_store: Any,
 ) -> IngestionService:
     return IngestionService(
-        parser_registry_fixture, chunker_fixture, document_repository_fixture
+        parser_registry_fixture,
+        chunker_fixture,
+        document_repository_fixture,
+        mock_embedding_engine,
+        mock_vector_store,
     )
 
 
@@ -85,9 +112,10 @@ def test_markdown_ingestion_traceability(
         assert chunk.metadata["parser_name"] == "MarkdownParser-v1"
         assert chunk.metadata["source_locator"] == str(sample_md.absolute())
 
-        # 4. Verifies file_type correctly propagated
+        # 4. Verifies file_type and strategy correctly propagated
         assert chunk.file_type == ".md"
         assert chunk.source_category == "test_docs"
+        assert chunk.chunk_strategy == "fixed"
 
         assert "start_offset" in chunk.metadata
         assert "end_offset" in chunk.metadata
