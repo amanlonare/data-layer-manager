@@ -9,6 +9,14 @@ class BaseRetriever(ABC):
     Interface for primary search strategies (Vector, FTS, Graph).
     """
 
+    @property
+    @abstractmethod
+    def id(self) -> str:
+        """
+        Unique identifier for the retriever strategy.
+        """
+        pass
+
     @abstractmethod
     async def retrieve(
         self, query: str, filter_: RetrievalFilter, limit: int = 30

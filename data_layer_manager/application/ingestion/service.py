@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from typing import Any
 
@@ -20,9 +21,9 @@ class IngestionService:
         self,
         parser_registry: ParserRegistry,
         chunker: BaseChunker,
-        document_repository: Any,
-        embedding_engine: BaseEmbeddingEngine,
-        vector_store: BaseVectorStore,
+        document_repository: Any | None = None,
+        embedding_engine: BaseEmbeddingEngine | None = None,
+        vector_store: BaseVectorStore | None = None,
         graph_store: BaseGraphStore | None = None,
         settings: ChunkingSettings | None = None,
     ):
@@ -34,7 +35,9 @@ class IngestionService:
         self.graph_store = graph_store
         self.settings = settings or get_settings().chunking
 
-    def ingest_file(self, file_path: str, source_metadata: dict[str, Any]) -> Document:
+    async def ingest_file(
+        self, file_path: str, source_metadata: dict[str, Any]
+    ) -> Document:
         """
         Main ingestion flow for a file.
         """
@@ -100,14 +103,40 @@ class IngestionService:
         document.status = "COMPLETED"
 
         # 6. Generate Embeddings for all chunks
-        chunk_texts = [c.content for c in chunks]
-        embeddings = self.embedding_engine.embed_batch(chunk_texts)
-        for i, chunk in enumerate(chunks):
-            chunk.embedding = embeddings[i]
+        if self.embedding_engine:
+            chunk_texts = [c.content for c in chunks]
+            embeddings = self.embedding_engine.embed_batch(chunk_texts)
+            for i, chunk in enumerate(chunks):
+                chunk.embedding = embeddings[i]
 
         # 7. Persist the Document (Metadata) and Chunks (VectorStore)
-        self.document_repository.save(document)
-        self.vector_store.add_chunks(chunks)
+        import logging
+
+        log = logging.getLogger(__name__)
+
+        if self.document_repository:
+            try:
+                self.document_repository.create_document(document)
+                # Ensure the transaction is committed for the document metadata
+                if hasattr(self.document_repository, "_session"):
+                    self.document_repository._session.commit()
+                log.info(
+                    f"✅ Successfully ingested document {document.id} to Postgres (pgvector)."
+                )
+            except Exception as e:
+                log.error(f"❌ Failed to ingest to Postgres: {e}")
+                if hasattr(self.document_repository, "_session"):
+                    self.document_repository._session.rollback()
+                raise
+
+        if self.vector_store:
+            try:
+                self.vector_store.add_chunks(chunks)
+                log.info(f"✅ Successfully ingested {len(chunks)} chunks to Qdrant.")
+            except Exception as e:
+                log.error(f"❌ Failed to ingest to Qdrant: {e}")
+                # We won't raise broadly here to allow partial success if vector DB struggles,
+                # but you could depending on constraints.
 
         # 8. Relational Mirroring (GraphStore)
         if self.graph_store:
@@ -122,12 +151,38 @@ class IngestionService:
                 }
                 self.graph_store.upsert_document(document.id, doc_meta)
                 self.graph_store.upsert_chunks(chunks)
+                log.info(
+                    f"✅ Successfully mirrored document {document.id} to Neo4j Graph."
+                )
             except Exception as e:
                 # Soft failure for secondary store
-                import logging
-
-                logging.getLogger(__name__).warning(
-                    f"Failed to mirror data to Graph Store: {e}"
-                )
+                log.warning(f"❌ Failed to mirror data to Graph Store: {e}")
 
         return document
+
+    async def ingest_text(
+        self, content: str, source_locator: str, metadata: dict[str, Any]
+    ) -> tuple[str, int]:
+        """
+        Convenience method for ingesting raw text.
+        Creates a temporary file to leverage the existing ingest_file pipeline.
+        """
+        import tempfile
+
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
+            f.write(content)
+            temp_path = f.name
+
+        try:
+            doc = await self.ingest_file(
+                temp_path,
+                source_metadata={
+                    "source_locator": source_locator,
+                    "source_category": metadata.get("source_category", "api_ingest"),
+                    **metadata,
+                },
+            )
+            return str(doc.id), len(doc.chunks)
+        finally:
+            if os.path.exists(temp_path):
+                os.unlink(temp_path)

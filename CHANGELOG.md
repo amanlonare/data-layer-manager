@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.5] - 2026-04-05
+
+### Added
+- **FastAPI Core**: A production-ready API layer with unified `search` (hybrid/graph) and `ingest` (text/upload) endpoints.
+- **MCP Server Implementation**: A standalone Model Context Protocol server enabling tool-based knowledge retrieval for LLM ecosystems (e.g., Claude/Claude Code).
+- **OpenAI Embedding Engine**: Integrated support for OpenAI's `text-embedding-3` models with configurable batch processing.
+- **Neo4j Hybrid Search**: Integrated the graph-based retriever into the parallel retrieval pipeline for relationship-aware search.
+- **Dockerized Infrastructure**: A unified `docker-compose.yml` for PostgreSQL (pgvector), Qdrant, and Neo4j for seamless local development and staging orchestration.
+
+### Changed
+- **Dynamic Vector Dimensions**: Updated database schema and pgvector integration to support dynamic embedding dimensions, removing hard-coded limitations.
+
 ## [0.0.4] - 2026-04-05
 
 ### Added

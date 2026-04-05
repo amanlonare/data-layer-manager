@@ -32,8 +32,8 @@ class ChunkDBModel(Base):
 
     content: Mapped[str] = mapped_column(Text)
 
-    # Embedding vector (Defaulting to all-MiniLM-L6-v2: 384)
-    embedding: Mapped[list[float] | None] = mapped_column(Vector(384), nullable=True)
+    # Embedding vector (Dynamic dimension length)
+    embedding: Mapped[list[float] | None] = mapped_column(Vector, nullable=True)
 
     # Keyword Search Vector (FTS)
     search_vector: Mapped[Any | None] = mapped_column(TSVECTOR, nullable=True)

@@ -49,7 +49,21 @@ class HybridRetrievalService:
         ]
 
         # Parallel execution to minimize database round-trip latency
-        results_sets = await asyncio.gather(*retrieval_tasks)
+        # return_exceptions=True ensures one failing retriever doesn't crash the whole search
+        responses = await asyncio.gather(*retrieval_tasks, return_exceptions=True)
+
+        results_sets: list[list[ScoredChunk]] = []
+        for i, resp in enumerate(responses):
+            if isinstance(resp, (Exception, BaseException)):
+                # Log the error but don't fail the entire request
+                import logging
+
+                logger = logging.getLogger(__name__)
+                logger.error(f"Retriever {self._retrievers[i].id} failed: {resp}")
+                continue
+            # Double check type narrowing
+            if isinstance(resp, list):
+                results_sets.append(resp)
 
         # 2. Rank Fusion (Reciprocal Rank Fusion)
         # Normalizes different scoring mechanisms into a single rank

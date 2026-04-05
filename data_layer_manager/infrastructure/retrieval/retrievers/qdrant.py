@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 from datetime import datetime
 from typing import TYPE_CHECKING, Any
@@ -34,7 +36,10 @@ class QdrantRetriever(BaseRetriever):
         self._client = client
         self._embedding_service = embedding_service
         self._collection_name = settings.qdrant.collection_name
-        self.id = "qdrant_semantic"
+
+    @property
+    def id(self) -> str:
+        return "qdrant_semantic"
 
     async def retrieve(
         self, query: str, filter_: RetrievalFilter, limit: int = 30
@@ -84,14 +89,24 @@ class QdrantRetriever(BaseRetriever):
         query_filter = models.Filter(must=must_conditions) if must_conditions else None
 
         # 3. Search (Modern Discovery API)
-        search_result = self._client.query_points(
-            collection_name=self._collection_name,
-            query=query_vector,
-            query_filter=query_filter,
-            limit=limit,
-            with_payload=True,
-            with_vectors=True,
-        ).points
+        try:
+            search_result = self._client.query_points(
+                collection_name=self._collection_name,
+                query=query_vector,
+                query_filter=query_filter,
+                limit=limit,
+                with_payload=True,
+                with_vectors=True,
+            ).points
+        except Exception as e:
+            # Handle collection missing (404) or connection errors gracefully
+            if "404" in str(e):
+                logger.warning(
+                    f"Qdrant collection '{self._collection_name}' not found. Returning empty results."
+                )
+                return []
+            logger.error(f"Qdrant search failed: {e}")
+            raise  # Re-throw other non-recoverable errors
 
         # 4. Map to ScoredChunk
         scored_chunks = []

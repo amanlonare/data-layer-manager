@@ -1,6 +1,6 @@
 [project]
 name = "data-layer-manager"
-version = "0.0.3"
+version = "0.0.5"
 description = "Reusable Data Layer for AI Systems"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -33,6 +33,7 @@ dependencies = [
     "trafilatura>=2.0.0",
     "pyyaml>=6.0.0",
     "torch>=2.11.0",
+    "mcp>=1.0.0",
 ]
 
 [project.optional-dependencies]

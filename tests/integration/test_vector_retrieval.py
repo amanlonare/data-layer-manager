@@ -49,6 +49,10 @@ class SimpleMockRetriever(BaseRetriever):
         self.engine = engine
         self.store = store
 
+    @property
+    def id(self) -> str:
+        return "simple_mock_retriever"
+
     async def retrieve(
         self, query: str, filter_: RetrievalFilter, limit: int = 30
     ) -> list[ScoredChunk]:
@@ -111,7 +115,7 @@ async def test_end_to_end_hybrid_flow(
         "This is an extremely specific piece of information about antigravity."
     )
 
-    doc = ingestion_service.ingest_file(
+    doc = await ingestion_service.ingest_file(
         str(file_path), source_metadata={"category": "test"}
     )
 
