@@ -769,7 +769,7 @@ dev = [
 [package.dev-dependencies]
 dev = [
     { name = "qdrant-client" },
-    { name = "testcontainers", extra = ["qdrant"] },
+    { name = "testcontainers", extra = ["neo4j", "qdrant"] },
     { name = "types-pyyaml" },
 ]
 
@@ -817,7 +817,7 @@ provides-extras = ["dev"]
 [package.metadata.requires-dev]
 dev = [
     { name = "qdrant-client", specifier = ">=1.17.1" },
-    { name = "testcontainers", extras = ["qdrant"], specifier = ">=4.14.2" },
+    { name = "testcontainers", extras = ["neo4j", "qdrant"], specifier = ">=4.14.2" },
     { name = "types-pyyaml", specifier = ">=6.0.12.20250915" },
 ]
 
@@ -3201,6 +3201,9 @@ wheels = [
 ]
 
 [package.optional-dependencies]
+neo4j = [
+    { name = "neo4j" },
+]
 qdrant = [
     { name = "qdrant-client" },
 ]
