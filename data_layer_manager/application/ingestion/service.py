@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from typing import Any
 
@@ -34,7 +35,9 @@ class IngestionService:
         self.graph_store = graph_store
         self.settings = settings or get_settings().chunking
 
-    def ingest_file(self, file_path: str, source_metadata: dict[str, Any]) -> Document:
+    async def ingest_file(
+        self, file_path: str, source_metadata: dict[str, Any]
+    ) -> Document:
         """
         Main ingestion flow for a file.
         """
@@ -156,3 +159,30 @@ class IngestionService:
                 log.warning(f"❌ Failed to mirror data to Graph Store: {e}")
 
         return document
+
+    async def ingest_text(
+        self, content: str, source_locator: str, metadata: dict[str, Any]
+    ) -> tuple[str, int]:
+        """
+        Convenience method for ingesting raw text.
+        Creates a temporary file to leverage the existing ingest_file pipeline.
+        """
+        import tempfile
+
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
+            f.write(content)
+            temp_path = f.name
+
+        try:
+            doc = await self.ingest_file(
+                temp_path,
+                source_metadata={
+                    "source_locator": source_locator,
+                    "source_category": metadata.get("source_category", "api_ingest"),
+                    **metadata,
+                },
+            )
+            return str(doc.id), len(doc.chunks)
+        finally:
+            if os.path.exists(temp_path):
+                os.unlink(temp_path)

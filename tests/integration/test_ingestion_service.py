@@ -80,7 +80,8 @@ def ingestion_service_fixture(
     )
 
 
-def test_markdown_ingestion_traceability(
+@pytest.mark.asyncio
+async def test_markdown_ingestion_traceability(
     ingestion_service_fixture: IngestionService,
     document_repository_fixture: InMemoryDocumentRepository,
     tmp_path: Any,
@@ -92,7 +93,7 @@ def test_markdown_ingestion_traceability(
     )
 
     # Run ingestion
-    doc = ingestion_service_fixture.ingest_file(
+    doc = await ingestion_service_fixture.ingest_file(
         str(sample_md), source_metadata={"source_category": "test_docs"}
     )
 
@@ -124,7 +125,8 @@ def test_markdown_ingestion_traceability(
     assert saved_doc.chunks[0].metadata["end_offset"] <= 100
 
 
-def test_html_ingestion_trafilatura(
+@pytest.mark.asyncio
+async def test_html_ingestion_trafilatura(
     ingestion_service_fixture: IngestionService,
     document_repository_fixture: InMemoryDocumentRepository,
     tmp_path: Any,
@@ -136,7 +138,7 @@ def test_html_ingestion_trafilatura(
     )
 
     # Run ingestion
-    doc = ingestion_service_fixture.ingest_file(
+    doc = await ingestion_service_fixture.ingest_file(
         str(sample_html), source_metadata={"source_category": "web_docs"}
     )
 

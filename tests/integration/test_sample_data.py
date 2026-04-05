@@ -61,13 +61,16 @@ def ingestion_service(parser_registry: ParserRegistry) -> IngestionService:
     )
 
 
-def test_ingest_sample_html(
+@pytest.mark.asyncio
+async def test_ingest_sample_html(
     ingestion_service: IngestionService, sample_data_dir: Path
 ) -> None:
     file_path = sample_data_dir / "sample.html"
     assert file_path.exists()
 
-    doc = ingestion_service.ingest_file(str(file_path), {"source_category": "samples"})
+    doc = await ingestion_service.ingest_file(
+        str(file_path), {"source_category": "samples"}
+    )
 
     assert doc.status == "COMPLETED"
     assert "Semantic Retrieval with Local Vectors" in doc.title
@@ -75,13 +78,16 @@ def test_ingest_sample_html(
     assert doc.chunks[0].metadata["parser_name"] == "HTMLParser-v1"
 
 
-def test_ingest_sample_markdown(
+@pytest.mark.asyncio
+async def test_ingest_sample_markdown(
     ingestion_service: IngestionService, sample_data_dir: Path
 ) -> None:
     file_path = sample_data_dir / "sample.md"
     assert file_path.exists()
 
-    doc = ingestion_service.ingest_file(str(file_path), {"source_category": "samples"})
+    doc = await ingestion_service.ingest_file(
+        str(file_path), {"source_category": "samples"}
+    )
 
     assert doc.status == "COMPLETED"
     assert "Project Guide: Data Layer Manager" in doc.title
@@ -89,13 +95,16 @@ def test_ingest_sample_markdown(
     assert doc.chunks[0].metadata["parser_name"] == "MarkdownParser-v1"
 
 
-def test_ingest_sample_text(
+@pytest.mark.asyncio
+async def test_ingest_sample_text(
     ingestion_service: IngestionService, sample_data_dir: Path
 ) -> None:
     file_path = sample_data_dir / "sample.txt"
     assert file_path.exists()
 
-    doc = ingestion_service.ingest_file(str(file_path), {"source_category": "samples"})
+    doc = await ingestion_service.ingest_file(
+        str(file_path), {"source_category": "samples"}
+    )
 
     assert doc.status == "COMPLETED"
     # Text parser extracts first line as title

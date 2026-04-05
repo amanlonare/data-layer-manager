@@ -135,8 +135,14 @@ def real_e2e_setup() -> tuple[IngestionService, HybridRetrievalService]:
     chunker = FixedSizeChunker(settings=test_settings)
     repo = MagicMock()
 
-    # 2. Setup REAL Vector Dependencies
-    embedding_engine = HFEmbeddingEngine()
+    # 2. Setup REAL Vector Dependencies (Pin a lightweight local model for stability)
+    from data_layer_manager.core.config import EmbeddingSettings
+
+    embedding_engine = HFEmbeddingEngine(
+        settings=EmbeddingSettings(
+            provider="huggingface", model_name="sentence-transformers/all-MiniLM-L6-v2"
+        )
+    )
     vector_store = RealInMemoryVectorStore()
 
     # 3. Initialize Services
@@ -172,7 +178,7 @@ async def test_real_hybrid_semantic_search(
     for name, content in docs_to_ingest.items():
         p = tmp_path / name
         p.write_text(content)
-        ingestion_service.ingest_file(
+        await ingestion_service.ingest_file(
             str(p), source_metadata={"topic": name.split(".")[0]}
         )
 

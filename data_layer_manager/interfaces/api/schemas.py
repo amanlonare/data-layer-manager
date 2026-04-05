@@ -2,6 +2,8 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
+from data_layer_manager.domain.schemas.strategy import SearchStrategyConfig
+
 
 class SearchRequest(BaseModel):
     query: str = Field(..., description="The search query string")
@@ -11,7 +13,10 @@ class SearchRequest(BaseModel):
     filters: dict[str, Any] | None = Field(
         None, description="Metadata filters to apply"
     )
-    strategy: str | None = Field(None, description="Retrieval strategy to use")
+    strategy: SearchStrategyConfig = Field(
+        default_factory=SearchStrategyConfig,
+        description="Structured retrieval strategy and parameters",
+    )
 
 
 class SearchResponse(BaseModel):

@@ -1,4 +1,3 @@
-import asyncio
 import logging
 import shutil
 import uuid
@@ -21,6 +20,10 @@ from data_layer_manager.application.retrieval.service import HybridRetrievalServ
 from data_layer_manager.core.config import get_settings
 from data_layer_manager.domain.interfaces.embeddings import BaseEmbeddingEngine
 from data_layer_manager.domain.interfaces.retrieval import BaseRetriever
+from data_layer_manager.domain.schemas.strategy import (
+    SearchStrategy,
+    SearchStrategyConfig,
+)
 from data_layer_manager.infrastructure.embeddings.hf_engine import HFEmbeddingEngine
 from data_layer_manager.infrastructure.embeddings.openai_engine import (
     OpenAIEmbeddingEngine,
@@ -103,38 +106,49 @@ except Exception as e:
     logger.warning(f"Failed to load embedding engine: {e}")
 
 
-def get_search_service(strategy: str | None = "hybrid") -> HybridRetrievalService:
-    """Builds the retrieval pipeline based on the requested strategy."""
+def get_search_service(
+    strategy_config: SearchStrategyConfig | None = None,
+) -> HybridRetrievalService:
+    """
+    Builds the retrieval pipeline based on the requested strategy.
+
+    Strategies:
+    - hybrid: Vector + Keyword (RRF fusion)
+    - vector: Semantic only
+    - keyword: Lexical only
+    - graph: Neo4j traversal only
+    """
+    strategy_config = strategy_config or SearchStrategyConfig()
+    name = strategy_config.name
     retrievers: list[BaseRetriever] = []
 
-    # 1. Dispatching based on strategy
-    if strategy == "pgvector":
-        if db_session and embedding_engine:
+    # 1. Dispatching based on strategy name
+    if name == SearchStrategy.VECTOR:
+        if qdrant_client and embedding_engine:
+            retrievers.append(
+                QdrantRetriever(
+                    client=qdrant_client,
+                    embedding_service=embedding_engine,
+                    settings=settings,
+                )
+            )
+        elif db_session and embedding_engine:
             retrievers.append(
                 PGVectorRetriever(
                     session=db_session, embedding_service=embedding_engine
                 )
             )
 
-    elif strategy == "qdrant":
-        if qdrant_client and embedding_engine:
-            retrievers.append(
-                QdrantRetriever(
-                    client=qdrant_client,
-                    embedding_service=embedding_engine,
-                    settings=settings,
-                )
-            )
-
-    elif strategy == "fts":
+    elif name == SearchStrategy.KEYWORD:
         if db_session:
             retrievers.append(PostgresFTSRetriever(session=db_session))
 
-    elif strategy == "graph":
+    elif name == SearchStrategy.GRAPH:
         if neo4j_driver:
             retrievers.append(Neo4jRetriever(driver=neo4j_driver))
 
-    else:  # Default: hybrid
+    else:
+        # Default: Hybrid (Vector + Lexical)
         if qdrant_client and embedding_engine:
             retrievers.append(
                 QdrantRetriever(
@@ -145,8 +159,6 @@ def get_search_service(strategy: str | None = "hybrid") -> HybridRetrievalServic
             )
         if db_session:
             retrievers.append(PostgresFTSRetriever(session=db_session))
-        if neo4j_driver:
-            retrievers.append(Neo4jRetriever(driver=neo4j_driver))
 
     return HybridRetrievalService(retrievers=retrievers, fusion_strategy=RRFFusion())
 
@@ -193,9 +205,6 @@ def get_ingestion_service() -> IngestionService:
     )
 
 
-search_service = get_search_service()
-ingestion_service = get_ingestion_service()
-
 # CORS configuration
 app.add_middleware(
     CORSMiddleware,
@@ -236,8 +245,8 @@ async def search(
     """
     Unified Hybrid + Graph retrieval endpoint.
     """
-    # Use the strategy from the request to build the service
-    service = get_search_service(strategy=request.strategy)
+    # Use the structured strategy config from the request
+    service = get_search_service(strategy_config=request.strategy)
 
     try:
         results = await service.search(query=request.query, limit=request.limit)
@@ -268,135 +277,81 @@ async def search(
     response_model=IngestResponse,
     tags=["ingestion"],
 )
-async def ingest_text(
+async def ingest(
     request: IngestRequest,
     background_tasks: BackgroundTasks,
-    service: IngestionService = Depends(get_ingestion_service),
     api_key: str = Depends(get_api_key),
 ) -> IngestResponse:
-    """
-    Ingest raw text content directly via JSON.
-    """
+    service = get_ingestion_service()
     task_id = str(uuid.uuid4())
-    tasks_status[task_id] = {"status": "queued", "progress": 0}
+    tasks_status[task_id] = {"status": "processing", "message": "Starting ingestion"}
 
-    # Ensure temporary directory exists
-    temp_dir = Path(".tmp/text_ingest")
-    temp_dir.mkdir(parents=True, exist_ok=True)
+    async def run_ingestion() -> None:
+        try:
+            doc_id, count = await service.ingest_text(
+                content=request.content,
+                source_locator=request.source or "api_upload",
+                metadata=request.metadata or {},
+            )
+            tasks_status[task_id] = {
+                "status": "completed",
+                "document_id": str(doc_id),
+                "chunk_count": count,
+            }
+        except Exception as e:
+            logger.error(f"Ingestion failed: {e}")
+            tasks_status[task_id] = {"status": "failed", "message": str(e)}
 
-    temp_path = temp_dir / f"{task_id}.txt"
-    with temp_path.open("w", encoding="utf-8") as f:
-        f.write(request.content)
-
-    background_tasks.add_task(background_ingest_real, task_id, str(temp_path), service)
-
-    return IngestResponse(
-        task_id=task_id,
-        status="accepted",
-        message=f"Text content accepted for processing. Tracking ID: {task_id}",
-    )
-
-
-@app.get("/v1/tasks/{task_id}", tags=["ingestion"])
-async def get_task_status(task_id: str) -> dict[str, Any]:
-    """Check the status of an ingestion task."""
-    if task_id not in tasks_status:
-        raise HTTPException(status_code=404, detail="Task not found")
-    return tasks_status[task_id]
-
-
-async def background_ingest(task_id: str, request: IngestRequest) -> None:
-    """Simulated background ingestion with progress updates."""
-    tasks_status[task_id] = {"status": "processing", "progress": 0}
-
-    # Simulate steps
-    steps = ["parsing", "chunking", "embedding", "indexing"]
-    for i, step in enumerate(steps):
-        await asyncio.sleep(1)  # Simulate work
-        tasks_status[task_id] = {
-            "status": "processing",
-            "progress": int((i + 1) / len(steps) * 100),
-            "current_step": step,
-        }
-
-    tasks_status[task_id] = {"status": "completed", "progress": 100}
+    background_tasks.add_task(run_ingestion)
+    return IngestResponse(task_id=task_id)
 
 
 @app.post(
-    "/v1/ingest/upload",
+    "/v1/ingest/file",
     response_model=IngestResponse,
     tags=["ingestion"],
 )
-async def ingest_upload(
+async def ingest_file(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
-    service: IngestionService = Depends(get_ingestion_service),
     api_key: str = Depends(get_api_key),
 ) -> IngestResponse:
-    """
-    Real-world file upload endpoint.
-    """
+    service = get_ingestion_service()
     task_id = str(uuid.uuid4())
-    tasks_status[task_id] = {"status": "queued", "progress": 0}
+    tasks_status[task_id] = {"status": "processing", "message": "Saving file"}
 
-    # Ensure temporary upload directory exists
-    upload_dir = Path(".tmp/uploads")
-    upload_dir.mkdir(parents=True, exist_ok=True)
+    # Save file to temp location
+    temp_dir = Path("/tmp/data-layer-manager")
+    temp_dir.mkdir(parents=True, exist_ok=True)
+    file_path = temp_dir / f"{task_id}_{file.filename}"
 
-    temp_path = upload_dir / f"{task_id}_{file.filename}"
-
-    # Write file stream to local disk for processing
-    with temp_path.open("wb") as buffer:
+    with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
-    background_tasks.add_task(background_ingest_real, task_id, str(temp_path), service)
-
-    return IngestResponse(
-        task_id=task_id,
-        status="accepted",
-        message=f"File '{file.filename}' accepted for processing. Tracking ID: {task_id}",
-    )
-
-
-async def background_ingest_real(
-    task_id: str, file_path: str, service: IngestionService
-) -> None:
-    """Orchestrates actual parsing, chunking, and indexing logic."""
-    tasks_status[task_id] = {"status": "processing", "progress": 10}
-    path = Path(file_path)
-
-    try:
-        tasks_status[task_id].update({"status": "parsing", "progress": 25})
-
-        # If no real service is wired (simulation mode), we still follow the logic
-        if not service.document_repository:
-            logger.warning(
-                "No document repository connected. Falling back to simulation."
+    async def run_ingestion() -> None:
+        try:
+            document = await service.ingest_file(
+                file_path=str(file_path),
+                source_metadata={"file_name": file.filename},
             )
-            await asyncio.sleep(1)  # Simulated Parsing
-            tasks_status[task_id].update({"status": "chunking", "progress": 50})
-            await asyncio.sleep(1)  # Simulated Chunking
-            tasks_status[task_id].update({"status": "indexing", "progress": 80})
-            await asyncio.sleep(1)  # Simulated Vectorization
-        else:
-            # Execute real pipeline
-            logger.info(f"Starting real ingestion for {file_path}")
-            # Use metadata dictionary as expected by ingest_file
-            doc_metadata = {
-                "source_type": "upload",
-                "file_type": path.suffix[1:] if path.suffix else "txt",
+            tasks_status[task_id] = {
+                "status": "completed",
+                "document_id": str(document.id),
+                "chunk_count": len(document.chunks),
             }
-            # We run this in a threadpool to avoid blocking the event loop
-            loop = asyncio.get_event_loop()
-            await loop.run_in_executor(
-                None, service.ingest_file, file_path, doc_metadata
-            )
+        except Exception as e:
+            logger.error(f"File ingestion failed: {e}")
+            tasks_status[task_id] = {"status": "failed", "message": str(e)}
+        finally:
+            if file_path.exists():
+                file_path.unlink()
 
-        tasks_status[task_id] = {"status": "completed", "progress": 100}
-    except Exception as e:
-        logger.error(f"Ingestion failed for task {task_id}: {e}")
-        tasks_status[task_id] = {"status": "failed", "progress": 0, "error": str(e)}
-    finally:
-        # Cleanup temporary file
-        if path.exists():
-            path.unlink()
+    background_tasks.add_task(run_ingestion)
+    return IngestResponse(task_id=task_id)
+
+
+@app.get("/v1/tasks/{task_id}", tags=["ops"])
+async def get_task_status(task_id: str) -> dict[str, Any]:
+    if task_id not in tasks_status:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return tasks_status[task_id]

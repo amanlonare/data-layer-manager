@@ -2,6 +2,10 @@ from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 
+from data_layer_manager.domain.schemas.strategy import (
+    SearchStrategy,
+    SearchStrategyConfig,
+)
 from data_layer_manager.interfaces.api.schemas import IngestRequest, SearchRequest
 
 # Create an MCP server with FastMCP
@@ -13,7 +17,7 @@ async def search_knowledge(
     query: str,
     limit: int = 10,
     filters: dict[str, Any] | None = None,
-    strategy: str | None = None,
+    strategy: SearchStrategy = SearchStrategy.HYBRID,
 ) -> str:
     """
     Search the hybrid data layer (Vector + Graph) for relevant information.
@@ -22,10 +26,17 @@ async def search_knowledge(
         query: The search query.
         limit: Number of results to return.
         filters: Metadata filters to apply (e.g. {"source_type": "file"}).
-        strategy: Retrieval strategy (e.g., 'hybrid', 'vector', 'keyword').
+        strategy: Retrieval strategy:
+            'hybrid': Semantic + Lexical fusion (Recommended),
+            'vector': Semantic similarity only,
+            'keyword': Exact term matching,
+            'graph': Relationship-aware traversal.
     """
-    # Explicitly pass filters to resolve the 'Missing named argument' error
-    _ = SearchRequest(query=query, limit=limit, filters=filters, strategy=strategy)
+    # Create config object for internal validation
+    strategy_config = SearchStrategyConfig(name=strategy)
+    _ = SearchRequest(
+        query=query, limit=limit, filters=filters, strategy=strategy_config
+    )
 
     # Wiring pending Docker Compose setup
     # In next phase, this will use the injected HybridRetrievalService
