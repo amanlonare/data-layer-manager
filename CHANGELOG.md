@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.4] - 2026-04-05
+
+### Added
+- **Graph Store Integration**: Integrated Neo4j to store documents and chunks as graph nodes with relational linkages (e.g., `HAS_CHUNK`).
+- **External Vector Backend**: Added support for Qdrant as a remote vector storage option for scalable semantic search capabilities.
+- **Tagging**: Established tagging support mapping documents and chunks for enriched metadata and better semantic queries.
+- **Versioning**: Formally tagged release `0.0.4`.
+
 ## [0.0.3] - 2026-04-04
 
 ### Added

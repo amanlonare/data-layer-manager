@@ -62,3 +62,9 @@ By default, these commands will:
 3.  Tag the commit with: `v<new>`.
 
 *Note: You must have a clean git state (no uncommitted changes) to run these commands.*
+
+### Changelog Updates
+
+All contributors MUST update the `CHANGELOG.md` for any changes that land in the main branch. You must follow the instructions provided in the **`changelog-update`** skill before submitting any changes.
+
+**Skill Location**: [/.agent/skills/changelog-update/SKILL.md](file://./.agent/skills/changelog-update/SKILL.md)
