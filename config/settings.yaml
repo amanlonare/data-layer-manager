@@ -11,11 +11,16 @@ embeddings:
   batch_size: 32
 
 chunking:
+  strategy: "fixed"
   default_size: 500
   default_overlap: 50
 
 vector_store:
-  provider: "pgvector"
+  backend: "pgvector"
+
+qdrant:
+  url: "http://localhost:6333"
+  collection_name: "chunks"
 
 database:
   db_type: "postgresql"

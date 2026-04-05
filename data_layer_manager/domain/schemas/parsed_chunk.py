@@ -12,4 +12,5 @@ class ParsedChunk(BaseModel):
     text: str
     start_offset: int
     end_offset: int
+    chunk_strategy: str | None = None
     metadata: dict[str, Any] = Field(default_factory=dict)

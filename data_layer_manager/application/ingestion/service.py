@@ -84,6 +84,7 @@ class IngestionService:
             chunk = Chunk(
                 document_id=document.id,
                 content=p_chunk.text,
+                chunk_strategy=self.settings.strategy.value,
                 source_type="file",
                 source_category=source_category,
                 file_type=file_type,

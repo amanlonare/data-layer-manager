@@ -1,4 +1,5 @@
 import os
+from enum import StrEnum
 from pathlib import Path
 from typing import Any
 
@@ -24,13 +25,33 @@ class EmbeddingSettings(BaseModel):
     batch_size: int = 32
 
 
+class ChunkingStrategy(StrEnum):
+    FIXED = "fixed"
+    SEMANTIC = "semantic"
+    RECURSIVE = "recursive"
+
+
 class ChunkingSettings(BaseModel):
+    strategy: ChunkingStrategy = ChunkingStrategy.FIXED
     default_size: int = 500
     default_overlap: int = 50
 
 
+class VectorBackend(StrEnum):
+    PGVECTOR = "pgvector"
+    QDRANT = "qdrant"
+
+
 class VectorStoreSettings(BaseModel):
-    provider: str = "pgvector"
+    backend: VectorBackend = VectorBackend.PGVECTOR
+
+
+class QdrantSettings(BaseModel):
+    url: str = "http://localhost:6333"
+    api_key: str | None = None
+    collection_name: str = "chunks"
+    prefer_grpc: bool = False
+    timeout: int = 20
 
 
 class RerankingSettings(BaseModel):
@@ -114,6 +135,7 @@ class Settings(BaseSettings):
     vector_store: VectorStoreSettings = VectorStoreSettings()
     database: DatabaseSettings = DatabaseSettings()
     reranking: RerankingSettings = RerankingSettings()
+    qdrant: QdrantSettings = QdrantSettings()
 
     model_config = SettingsConfigDict(
         env_file=".env",

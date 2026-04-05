@@ -15,6 +15,7 @@ class Chunk(BaseModel):
     id: UUID = Field(default_factory=uuid4)
     document_id: UUID
     content: str
+    chunk_strategy: str = "fixed"
     embedding: list[float] | None = None
 
     # Metadata Strategy: Explicit core fields + flexible JSONB-style dict

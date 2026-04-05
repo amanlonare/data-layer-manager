@@ -112,9 +112,10 @@ def test_markdown_ingestion_traceability(
         assert chunk.metadata["parser_name"] == "MarkdownParser-v1"
         assert chunk.metadata["source_locator"] == str(sample_md.absolute())
 
-        # 4. Verifies file_type correctly propagated
+        # 4. Verifies file_type and strategy correctly propagated
         assert chunk.file_type == ".md"
         assert chunk.source_category == "test_docs"
+        assert chunk.chunk_strategy == "fixed"
 
         assert "start_offset" in chunk.metadata
         assert "end_offset" in chunk.metadata
