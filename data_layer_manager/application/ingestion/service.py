@@ -7,6 +7,7 @@ from data_layer_manager.domain.entities.chunk import Chunk
 from data_layer_manager.domain.entities.document import Document
 from data_layer_manager.domain.interfaces.chunker import BaseChunker
 from data_layer_manager.domain.interfaces.embeddings import BaseEmbeddingEngine
+from data_layer_manager.domain.interfaces.graph_store import BaseGraphStore
 from data_layer_manager.domain.interfaces.vector_store import BaseVectorStore
 
 
@@ -22,6 +23,7 @@ class IngestionService:
         document_repository: Any,
         embedding_engine: BaseEmbeddingEngine,
         vector_store: BaseVectorStore,
+        graph_store: BaseGraphStore | None = None,
         settings: ChunkingSettings | None = None,
     ):
         self.parser_registry = parser_registry
@@ -29,6 +31,7 @@ class IngestionService:
         self.document_repository = document_repository
         self.embedding_engine = embedding_engine
         self.vector_store = vector_store
+        self.graph_store = graph_store
         self.settings = settings or get_settings().chunking
 
     def ingest_file(self, file_path: str, source_metadata: dict[str, Any]) -> Document:
@@ -105,5 +108,26 @@ class IngestionService:
         # 7. Persist the Document (Metadata) and Chunks (VectorStore)
         self.document_repository.save(document)
         self.vector_store.add_chunks(chunks)
+
+        # 8. Relational Mirroring (GraphStore)
+        if self.graph_store:
+            try:
+                # Mirroring logic: we want core fields as well
+                doc_meta = {
+                    "title": document.title,
+                    "source_type": document.source_type,
+                    "source_category": document.source_category,
+                    "file_type": document.file_type,
+                    **document.metadata,
+                }
+                self.graph_store.upsert_document(document.id, doc_meta)
+                self.graph_store.upsert_chunks(chunks)
+            except Exception as e:
+                # Soft failure for secondary store
+                import logging
+
+                logging.getLogger(__name__).warning(
+                    f"Failed to mirror data to Graph Store: {e}"
+                )
 
         return document

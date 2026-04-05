@@ -67,6 +67,6 @@ pythonpath = ["."]
 [dependency-groups]
 dev = [
     "qdrant-client>=1.17.1",
-    "testcontainers[qdrant]>=4.14.2",
+    "testcontainers[neo4j,qdrant]>=4.14.2",
     "types-pyyaml>=6.0.12.20250915",
 ]

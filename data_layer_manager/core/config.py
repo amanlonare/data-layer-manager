@@ -59,6 +59,20 @@ class RerankingSettings(BaseModel):
     limit: int = 10
 
 
+class GraphBackend(StrEnum):
+    NEO4J = "neo4j"
+
+
+class GraphStoreSettings(BaseModel):
+    backend: GraphBackend = GraphBackend.NEO4J
+
+
+class Neo4jSettings(BaseModel):
+    url: str = "bolt://localhost:7687"
+    username: str = "neo4j"
+    password: str = "password"
+
+
 class DatabaseSettings(BaseModel):
     db_type: str = "postgresql"
     # Secrets should come from .env
@@ -136,6 +150,8 @@ class Settings(BaseSettings):
     database: DatabaseSettings = DatabaseSettings()
     reranking: RerankingSettings = RerankingSettings()
     qdrant: QdrantSettings = QdrantSettings()
+    graph_store: GraphStoreSettings = GraphStoreSettings()
+    neo4j: Neo4jSettings = Neo4jSettings()
 
     model_config = SettingsConfigDict(
         env_file=".env",
