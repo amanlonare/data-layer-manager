@@ -16,7 +16,10 @@ class PostgresFTSRetriever(BaseRetriever):
 
     def __init__(self, session: Session):
         self._session = session
-        self.id = "pg_fts_keyword"
+
+    @property
+    def id(self) -> str:
+        return "pg_fts_keyword"
 
     async def retrieve(
         self, query: str, filter_: RetrievalFilter, limit: int = 30
@@ -61,7 +64,22 @@ class PostgresFTSRetriever(BaseRetriever):
         # 6. Map results
         scored_chunks = []
         for r in results:
-            chunk = Chunk.model_validate(r)
+            # Explicitly map attributes to avoid collision with SQLAlchemy's internal .metadata property
+            chunk_data = {
+                "id": r.id,
+                "document_id": r.document_id,
+                "content": r.content,
+                "source_type": r.source_type,
+                "source_category": r.source_category,
+                "file_type": r.file_type,
+                "status": r.status,
+                "metadata": r.metadata_
+                or {},  # Use the mapped 'metadata_' name from DB model
+                "created_at": r.created_at,
+                "updated_at": r.updated_at,
+            }
+            chunk = Chunk.model_validate(chunk_data)
+
             scored_chunks.append(
                 ScoredChunk(
                     chunk=chunk,

@@ -91,6 +91,10 @@ class SimpleSemanticRetriever(BaseRetriever):
         self.engine = engine
         self.store = store
 
+    @property
+    def id(self) -> str:
+        return "simple_semantic_retriever"
+
     async def retrieve(
         self, query: str, filter_: RetrievalFilter, limit: int = 30
     ) -> list[ScoredChunk]:

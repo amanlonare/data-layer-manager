@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any
 
 import yaml
+from dotenv import load_dotenv
 from pydantic import BaseModel, Field
 from pydantic.fields import FieldInfo
 from pydantic_settings import (
@@ -12,17 +13,26 @@ from pydantic_settings import (
     SettingsConfigDict,
 )
 
+# Load .env before any Settings class is defined
+load_dotenv()
 
-class AppSettings(BaseModel):
+
+class AppSettings(BaseSettings):
     name: str = "Data Layer Manager"
-    version: str = "0.0.1"
+    version: str = "0.0.4"  # Updated version
+    api_key: str = "dev-secret-key"
+
+    model_config = SettingsConfigDict(extra="ignore")
 
 
-class EmbeddingSettings(BaseModel):
-    provider: str = "huggingface"
-    model_name: str = "all-MiniLM-L6-v2"
-    dimension: int = 384
+class EmbeddingSettings(BaseSettings):
+    provider: str = "openai"
+    model_name: str = "text-embedding-3-small"
+    dimension: int = 1536
     batch_size: int = 32
+    api_key: str | None = Field(default=None, validation_alias="OPENAI_API_KEY")
+
+    model_config = SettingsConfigDict(extra="ignore")
 
 
 class ChunkingStrategy(StrEnum):
@@ -46,12 +56,14 @@ class VectorStoreSettings(BaseModel):
     backend: VectorBackend = VectorBackend.PGVECTOR
 
 
-class QdrantSettings(BaseModel):
-    url: str = "http://localhost:6333"
+class QdrantSettings(BaseSettings):
+    url: str = Field(default="http://localhost:6333", validation_alias="QDRANT_URL")
     api_key: str | None = None
     collection_name: str = "chunks"
     prefer_grpc: bool = False
     timeout: int = 20
+
+    model_config = SettingsConfigDict(extra="ignore")
 
 
 class RerankingSettings(BaseModel):
@@ -67,16 +79,26 @@ class GraphStoreSettings(BaseModel):
     backend: GraphBackend = GraphBackend.NEO4J
 
 
-class Neo4jSettings(BaseModel):
-    url: str = "bolt://localhost:7687"
-    username: str = "neo4j"
-    password: str = "password"
+class Neo4jSettings(BaseSettings):
+    url: str = Field(default="bolt://localhost:7687", validation_alias="NEO4J_URL")
+    username: str = Field(default="neo4j", validation_alias="NEO4J_USER")
+    password: str = Field(default="password", validation_alias="NEO4J_PASSWORD")
+
+    model_config = SettingsConfigDict(extra="ignore")
 
 
-class DatabaseSettings(BaseModel):
+class RedisSettings(BaseSettings):
+    url: str = Field(default="redis://localhost:6379/0", validation_alias="REDIS_URL")
+
+    model_config = SettingsConfigDict(extra="ignore")
+
+
+class DatabaseSettings(BaseSettings):
     db_type: str = "postgresql"
     # Secrets should come from .env
     url: str | None = Field(default=None, validation_alias="DATABASE_URL")
+
+    model_config = SettingsConfigDict(extra="ignore")
 
 
 class YamlConfigSettingsSource(PydanticBaseSettingsSource):
@@ -144,17 +166,20 @@ class Settings(BaseSettings):
     """
 
     app: AppSettings = AppSettings()
-    embeddings: EmbeddingSettings = EmbeddingSettings()
-    chunking: ChunkingSettings = ChunkingSettings()
-    vector_store: VectorStoreSettings = VectorStoreSettings()
     database: DatabaseSettings = DatabaseSettings()
+    neo4j: Neo4jSettings = Neo4jSettings()
+    chunking: ChunkingSettings = ChunkingSettings()
+    embeddings: EmbeddingSettings = EmbeddingSettings()
     reranking: RerankingSettings = RerankingSettings()
     qdrant: QdrantSettings = QdrantSettings()
+    redis: RedisSettings = RedisSettings()
+    vector_store: VectorStoreSettings = VectorStoreSettings()
     graph_store: GraphStoreSettings = GraphStoreSettings()
-    neo4j: Neo4jSettings = Neo4jSettings()
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=os.path.join(
+            os.path.dirname(os.path.dirname(os.path.dirname(__file__))), ".env"
+        ),
         env_file_encoding="utf-8",
         extra="ignore",
     )

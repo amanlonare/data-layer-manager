@@ -1,19 +1,15 @@
 import os
 from logging.config import fileConfig
-from typing import TYPE_CHECKING
 
 from alembic import context
+from dotenv import load_dotenv
 from sqlalchemy import engine_from_config, pool
-
-# -- IDE HELPER --
-# This block only runs during static analysis to silence false-positive 'context' errors.
-if TYPE_CHECKING:
-    from alembic.runtime.environment import EnvironmentContext
-
-    context: EnvironmentContext  # type: ignore
 
 # Import the models to register them with Base.metadata
 from data_layer_manager.infrastructure.persistence.models import Base
+
+# Load environment variables
+load_dotenv()
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

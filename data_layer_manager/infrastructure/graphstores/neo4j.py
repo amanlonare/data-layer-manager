@@ -49,6 +49,19 @@ class Neo4jGraphStore(BaseGraphStore):
         """
         Upserts a Document node.
         """
+        import json
+
+        def _sanitize_metadata(meta: dict[str, Any]) -> dict[str, Any]:
+            sanitized = {}
+            for k, v in meta.items():
+                if isinstance(v, (dict, list)):
+                    sanitized[k] = json.dumps(v)
+                elif v is None:
+                    continue
+                else:
+                    sanitized[k] = v
+            return sanitized
+
         query: LiteralString = """
         MERGE (d:Document {id: $id})
         SET d += $metadata,
@@ -56,7 +69,7 @@ class Neo4jGraphStore(BaseGraphStore):
         """
         parameters = {
             "id": str(document_id),
-            "metadata": metadata,
+            "metadata": _sanitize_metadata(metadata),
         }
         with self._driver.session() as session:
             session.run(query, parameters)
@@ -67,6 +80,19 @@ class Neo4jGraphStore(BaseGraphStore):
         """
         if not chunks:
             return
+
+        import json
+
+        def _sanitize_metadata(meta: dict[str, Any]) -> dict[str, Any]:
+            sanitized = {}
+            for k, v in meta.items():
+                if isinstance(v, (dict, list)):
+                    sanitized[k] = json.dumps(v)
+                elif v is None:
+                    continue  # Neo4j properties can't be null, just omit
+                else:
+                    sanitized[k] = v
+            return sanitized
 
         # Optimization: Use UNWIND for batch upsert
         query: LiteralString = """
@@ -93,7 +119,7 @@ class Neo4jGraphStore(BaseGraphStore):
                     "content": chunk.content,
                     "chunk_strategy": chunk.chunk_strategy,
                     "file_type": chunk.file_type,
-                    "metadata": chunk.metadata,
+                    "metadata": _sanitize_metadata(chunk.metadata),
                 }
             )
 

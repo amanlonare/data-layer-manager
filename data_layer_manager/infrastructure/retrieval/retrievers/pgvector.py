@@ -18,7 +18,10 @@ class PGVectorRetriever(BaseRetriever):
     def __init__(self, session: Session, embedding_service: BaseEmbeddingEngine):
         self._session = session
         self._embedding_service = embedding_service
-        self.id = "pgvector_semantic"
+
+    @property
+    def id(self) -> str:
+        return "pgvector_semantic"
 
     async def retrieve(
         self, query: str, filter_: RetrievalFilter, limit: int = 30
@@ -56,12 +59,21 @@ class PGVectorRetriever(BaseRetriever):
         # 6. Map to ScoredChunk for traceability
         scored_chunks = []
         for r in results:
-            # Reconstruct Chunk entity
-            chunk = Chunk.model_validate(r)
-
-            # Since distance calculation in SQL is not returned as a column easily here
-            # (unless we select it explicitly), we'll use a placeholder or select it.
-            # For modularity, we'll re-select the distance as a label if needed.
+            # Explicitly map attributes to avoid collision with SQLAlchemy's internal .metadata property
+            chunk_data = {
+                "id": r.id,
+                "document_id": r.document_id,
+                "content": r.content,
+                "source_type": r.source_type,
+                "source_category": r.source_category,
+                "file_type": r.file_type,
+                "status": r.status,
+                "metadata": r.metadata_
+                or {},  # Use the mapped 'metadata_' name from DB model
+                "created_at": r.created_at,
+                "updated_at": r.updated_at,
+            }
+            chunk = Chunk.model_validate(chunk_data)
 
             scored_chunks.append(
                 ScoredChunk(
