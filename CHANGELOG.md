@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.7] - 2026-04-06
+
+### Added
+- **Technical Documentation Synthesis**: Delivered a comprehensive `docs/TECHNICAL_DOCUMENTATION.md` covering Clean Architecture, Hybrid Retrieval (RRF), Ingestion Pipelines, MCP Connectivity, and Operational Infrastructure.
+
+## [0.0.6] - 2026-04-06
+
+### Added
+- **Modular MCP Apps**: Relocated and modularized the MCP server into a dedicated `apps/mcp/` directory with independent tool modules for search and ingestion.
+- **Shared Application Factories**: Implemented a unified singleton-style factory pattern in `data_layer_manager/application/factories.py` for cross-interface dependency management.
+- **Verification Scripting**: Added a standalone `scripts/verify_fix.py` for end-to-end backend validation (1536-dim vector search).
+
+### Changed
+- **Strategy Schema Evolution**: Added Alembic migration `e7065f4d9ee0` ensuring the `pgvector` store supports high-dimensional (1536) embedding headers.
+- **Enhanced API Robustness**: Patched the `/search` endpoint to gracefully handle string-based strategy inputs and improved generic error reporting.
+
+### Removed
+- **Legacy Interfaces**: Deprecated and removed the monolithic `mcp/server.py` in favor of the modular `apps/` structure.
+
 ## [0.0.5] - 2026-04-05
 
 ### Added
