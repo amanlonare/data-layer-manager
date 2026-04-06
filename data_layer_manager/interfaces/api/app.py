@@ -4,53 +4,13 @@ import uuid
 from pathlib import Path
 from typing import Any
 
-import neo4j
 from fastapi import BackgroundTasks, Depends, FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from neo4j import GraphDatabase
-from qdrant_client import QdrantClient
 
 from data_layer_manager.application.auth.security import get_api_key
-from data_layer_manager.application.ingestion.chunkers.fixed_chunker import (
-    FixedSizeChunker,
-)
-from data_layer_manager.application.ingestion.parser_registry import ParserRegistry
-from data_layer_manager.application.ingestion.service import IngestionService
-from data_layer_manager.application.retrieval.service import HybridRetrievalService
-from data_layer_manager.core.config import get_settings
-from data_layer_manager.domain.interfaces.embeddings import BaseEmbeddingEngine
-from data_layer_manager.domain.interfaces.retrieval import BaseRetriever
-from data_layer_manager.domain.schemas.strategy import (
-    SearchStrategy,
-    SearchStrategyConfig,
-)
-from data_layer_manager.infrastructure.embeddings.hf_engine import HFEmbeddingEngine
-from data_layer_manager.infrastructure.embeddings.openai_engine import (
-    OpenAIEmbeddingEngine,
-)
-from data_layer_manager.infrastructure.graphstores.neo4j import Neo4jGraphStore
-from data_layer_manager.infrastructure.parsers.html_parser import HTMLParser
-from data_layer_manager.infrastructure.parsers.markdown_parser import MarkdownParser
-from data_layer_manager.infrastructure.parsers.text_parser import TextParser
-from data_layer_manager.infrastructure.persistence.database import SessionLocal
-from data_layer_manager.infrastructure.persistence.repositories.document import (
-    DocumentRepository,
-)
-from data_layer_manager.infrastructure.retrieval.fusion.rrf import RRFFusion
-from data_layer_manager.infrastructure.retrieval.retrievers.neo4j_graph import (
-    Neo4jRetriever,
-)
-from data_layer_manager.infrastructure.retrieval.retrievers.pgfts import (
-    PostgresFTSRetriever,
-)
-from data_layer_manager.infrastructure.retrieval.retrievers.pgvector import (
-    PGVectorRetriever,
-)
-from data_layer_manager.infrastructure.retrieval.retrievers.qdrant import (
-    QdrantRetriever,
-)
-from data_layer_manager.infrastructure.vectorstores.qdrant.store import (
-    QdrantVectorStore,
+from data_layer_manager.application.factories import (
+    get_ingestion_service,
+    get_search_service,
 )
 from data_layer_manager.interfaces.api.schemas import (
     IngestRequest,
@@ -62,148 +22,6 @@ from data_layer_manager.interfaces.api.schemas import (
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Data Layer Manager API", version="0.0.5")
-
-# Initialize global state dependencies
-settings = get_settings()
-
-# Initialize Soft Drivers (Limited Mode)
-db_session = SessionLocal()
-qdrant_client: QdrantClient | None = None
-neo4j_driver: neo4j.Driver | None = None
-embedding_engine: BaseEmbeddingEngine | None = None
-
-try:
-    qdrant_client = QdrantClient(
-        url=settings.qdrant.url, timeout=settings.qdrant.timeout
-    )
-    # Check connection
-    qdrant_client.get_collections()
-    logger.info("Successfully connected to Qdrant.")
-except Exception as e:
-    logger.warning(f"Qdrant connection failed (Limited Mode active): {e}")
-
-try:
-    neo4j_driver = GraphDatabase.driver(
-        settings.neo4j.url, auth=(settings.neo4j.username, settings.neo4j.password)
-    )
-    # Check connection
-    if neo4j_driver:
-        neo4j_driver.verify_connectivity()
-        logger.info("Successfully connected to Neo4j.")
-except Exception as e:
-    logger.warning(f"Neo4j connection failed (Limited Mode active): {e}")
-
-try:
-    if settings.embeddings.provider == "openai":
-        embedding_engine = OpenAIEmbeddingEngine(
-            model_name=settings.embeddings.model_name,
-            batch_size=settings.embeddings.batch_size,
-        )
-    else:
-        embedding_engine = HFEmbeddingEngine(settings.embeddings)
-    logger.info(f"Successfully loaded embedding engine: {settings.embeddings.provider}")
-except Exception as e:
-    logger.warning(f"Failed to load embedding engine: {e}")
-
-
-def get_search_service(
-    strategy_config: SearchStrategyConfig | None = None,
-) -> HybridRetrievalService:
-    """
-    Builds the retrieval pipeline based on the requested strategy.
-
-    Strategies:
-    - hybrid: Vector + Keyword (RRF fusion)
-    - vector: Semantic only
-    - keyword: Lexical only
-    - graph: Neo4j traversal only
-    """
-    strategy_config = strategy_config or SearchStrategyConfig()
-    name = strategy_config.name
-    retrievers: list[BaseRetriever] = []
-
-    # 1. Dispatching based on strategy name
-    if name == SearchStrategy.VECTOR:
-        if qdrant_client and embedding_engine:
-            retrievers.append(
-                QdrantRetriever(
-                    client=qdrant_client,
-                    embedding_service=embedding_engine,
-                    settings=settings,
-                )
-            )
-        elif db_session and embedding_engine:
-            retrievers.append(
-                PGVectorRetriever(
-                    session=db_session, embedding_service=embedding_engine
-                )
-            )
-
-    elif name == SearchStrategy.KEYWORD:
-        if db_session:
-            retrievers.append(PostgresFTSRetriever(session=db_session))
-
-    elif name == SearchStrategy.GRAPH:
-        if neo4j_driver:
-            retrievers.append(Neo4jRetriever(driver=neo4j_driver))
-
-    else:
-        # Default: Hybrid (Vector + Lexical)
-        if qdrant_client and embedding_engine:
-            retrievers.append(
-                QdrantRetriever(
-                    client=qdrant_client,
-                    embedding_service=embedding_engine,
-                    settings=settings,
-                )
-            )
-        if db_session:
-            retrievers.append(PostgresFTSRetriever(session=db_session))
-
-    return HybridRetrievalService(retrievers=retrievers, fusion_strategy=RRFFusion())
-
-
-def get_ingestion_service() -> IngestionService:
-    """Builds the ingestion pipeline with Registry + Chunker + Repos"""
-    registry = ParserRegistry()
-    registry.register(".html", HTMLParser())
-    registry.register(".md", MarkdownParser())
-    registry.register(".txt", TextParser())
-    registry.set_fallback(TextParser())
-
-    chunker = FixedSizeChunker()
-
-    # Qdrant vector store (optional — only if client is connected)
-    vector_store = None
-    if qdrant_client:
-        try:
-            vector_store = QdrantVectorStore(client=qdrant_client)
-        except Exception as e:
-            logger.warning(
-                f"QdrantVectorStore init failed during ingestion wiring: {e}"
-            )
-
-    doc_repo = None
-    if db_session:
-        doc_repo = DocumentRepository(session=db_session)
-
-    # Neo4j graph store (optional — only if driver is connected)
-    graph_store = None
-    if neo4j_driver:
-        try:
-            graph_store = Neo4jGraphStore(driver=neo4j_driver)
-        except Exception as e:
-            logger.warning(f"Neo4jGraphStore init failed during ingestion wiring: {e}")
-
-    return IngestionService(
-        parser_registry=registry,
-        chunker=chunker,
-        document_repository=doc_repo,
-        embedding_engine=embedding_engine,
-        vector_store=vector_store,
-        graph_store=graph_store,
-    )
-
 
 # CORS configuration
 app.add_middleware(

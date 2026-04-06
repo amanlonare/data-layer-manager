@@ -10,9 +10,14 @@ class SearchStrategy(StrEnum):
     """
 
     HYBRID = "hybrid"  # Balanced: Vector (Semantic) + Postgres FTS (Lexical) using RRF.
-    VECTOR = "vector"  # Semantic: Pure vector search using pgvector or Qdrant.
-    KEYWORD = "keyword"  # Lexical: Pure full-text search using Postgres FTS.
+    VECTOR = "vector"  # Semantic: Pure vector search (default backend).
+    KEYWORD = "keyword"  # Lexical: Pure keyword search (default backend).
     GRAPH = "graph"  # Relational: Enhanced traversal via Neo4j connection nodes.
+
+    # Explicit Backend Aliases (used by frontend)
+    PGVECTOR = "pgvector"
+    QDRANT = "qdrant"
+    FTS = "fts"
 
 
 class SearchStrategyConfig(BaseModel):
