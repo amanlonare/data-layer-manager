@@ -58,7 +58,7 @@ docker-compose.local.yml
 # Misc
 .DS_Store
 .planning/
-.agent/
+# .agent/
 
 # frontend
-frontend/
+# frontend/

@@ -1,8 +1,17 @@
-from typing import Any
+from typing import Annotated, Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, BeforeValidator, Field
 
-from data_layer_manager.domain.schemas.strategy import SearchStrategyConfig
+from data_layer_manager.domain.schemas.strategy import (
+    SearchStrategy,
+    SearchStrategyConfig,
+)
+
+
+def validate_strategy(v: Any) -> Any:
+    if isinstance(v, str):
+        return SearchStrategyConfig(name=SearchStrategy(v))
+    return v
 
 
 class SearchRequest(BaseModel):
@@ -13,9 +22,11 @@ class SearchRequest(BaseModel):
     filters: dict[str, Any] | None = Field(
         None, description="Metadata filters to apply"
     )
-    strategy: SearchStrategyConfig = Field(
-        default_factory=SearchStrategyConfig,
-        description="Structured retrieval strategy and parameters",
+    strategy: Annotated[SearchStrategyConfig, BeforeValidator(validate_strategy)] = (
+        Field(
+            default_factory=SearchStrategyConfig,
+            description="Structured retrieval strategy and parameters",
+        )
     )
 
 

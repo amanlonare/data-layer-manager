@@ -1,5 +1,5 @@
 # .PHONY defines targets that are not files
-.PHONY: install lint format test dev worker migrate clean help services-up services-down services-reset db-init smoke-test
+.PHONY: install lint format test dev worker mcp migrate clean help services-up services-down services-reset db-init smoke-test
 
 # Default target
 help:
@@ -10,6 +10,7 @@ help:
 	@echo "  test           - Run all tests with pytest"
 	@echo "  dev            - Start the FastAPI development server"
 	@echo "  worker         - Start the Celery worker"
+	@echo "  mcp            - Start the MCP server for AI tools"
 	@echo "  migrate        - Apply pending database migrations"
 	@echo "  clean          - Remove temporary files and caches"
 	@echo ""
@@ -40,6 +41,9 @@ dev:
 
 worker:
 	uv run celery -A apps.worker.main worker --loglevel=info
+
+mcp:
+	@PYTHONPATH=. uv run python -m apps.mcp.src.main
 
 migrate:
 	uv run alembic upgrade head

@@ -1,12 +1,6 @@
-# data-layer-manager
+# Data Layer Manager 🧠
 
 **Library-first, Modular Monolith backend for modern AI Knowledge Systems.**
-
-`data-layer-manager` is the reusable data layer for enterprise AI systems. It connects multiple data sources, extracts and cleans text, chunks documents, generates embeddings, and retrieves relevant context with citation-ready metadata.
-
----
-
-## 🚀 Vision
 
 - **Knowledge Hub**: Centralized RAG for enterprise search.
 - **Agent Platform**: Foundational data layer for internal copilots and automation agents.
