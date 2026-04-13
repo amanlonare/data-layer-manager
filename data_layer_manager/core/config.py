@@ -97,6 +97,7 @@ class DatabaseSettings(BaseSettings):
     db_type: str = "postgresql"
     # Secrets should come from .env
     url: str | None = Field(default=None, validation_alias="DATABASE_URL")
+    echo: bool = False
 
     model_config = SettingsConfigDict(extra="ignore")
 

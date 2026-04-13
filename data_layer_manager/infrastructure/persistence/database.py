@@ -16,7 +16,7 @@ else:
 engine = create_engine(
     DATABASE_URL,
     pool_pre_ping=True,
-    echo=True,  # Critical for debugging the'Limited Mode' integration
+    echo=settings.database.echo,
     connect_args={"options": "-c timezone=utc"},
 )
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
