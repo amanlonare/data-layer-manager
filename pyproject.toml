@@ -1,6 +1,6 @@
 [project]
 name = "data-layer-manager"
-version = "0.0.7"
+version = "0.0.8"
 description = "Reusable Data Layer for AI Systems"
 readme = "README.md"
 requires-python = ">=3.11"
