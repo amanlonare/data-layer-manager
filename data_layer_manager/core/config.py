@@ -19,7 +19,7 @@ load_dotenv()
 
 class AppSettings(BaseSettings):
     name: str = "Data Layer Manager"
-    version: str = "0.0.4"  # Updated version
+    version: str = "0.0.8"  # Updated version
     api_key: str = "dev-secret-key"
 
     model_config = SettingsConfigDict(extra="ignore")
