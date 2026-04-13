@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.8] - 2026-04-13
+
+### Added
+- **Seeding Infrastructure**: Introduced `scripts/seed_sample.py` to automate the ingestion of high-fidelity RAG and vector database documentation into the system.
+- **Protocol Configuration**: Added a new `echo` setting to `DatabaseSettings` in `core/config.py` to allow toggling SQLAlchemy SQL logging via the `DATABASE_ECHO` environment variable.
+
+### Fixed
+- **MCP Protocol Stability**: Resolved a critical issue where SQL logging and application messages were polluting `stdout`, causing JSON-RPC parsing failures in MCP clients. All non-protocol logs are now redirected to `stderr`.
+- **Type Safety in Scripts**: Fixed missing type annotations in utility scripts to maintain 100% strict Mypy compliance.
+
+### Changed
+- **MCP Server Entry Point**: Refactored the FastMCP server configuration in `apps/mcp/src/main.py` to explicitly use `sys.stderr` for its logging stream, ensuring a pristine JSON-RPC transport on `stdout`.
+
 ## [0.0.7] - 2026-04-06
 
 ### Added

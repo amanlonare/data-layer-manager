@@ -19,7 +19,7 @@ load_dotenv()
 
 class AppSettings(BaseSettings):
     name: str = "Data Layer Manager"
-    version: str = "0.0.4"  # Updated version
+    version: str = "0.0.8"  # Updated version
     api_key: str = "dev-secret-key"
 
     model_config = SettingsConfigDict(extra="ignore")
@@ -97,6 +97,7 @@ class DatabaseSettings(BaseSettings):
     db_type: str = "postgresql"
     # Secrets should come from .env
     url: str | None = Field(default=None, validation_alias="DATABASE_URL")
+    echo: bool = False
 
     model_config = SettingsConfigDict(extra="ignore")
 
